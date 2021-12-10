@@ -38,19 +38,29 @@ namespace HttpLib
             HttpStream = stream;
         }
 
+        protected void PrepareHeaders()
+        {
+            if (HttpStream.Cookies?.GetCookies(new Uri(HttpStream.Url)).Count > 0)
+                Headers[HttpRequestHeader.Cookie] = HttpStream.Cookies.GetCookieHeader(new Uri(HttpStream.Url));
+            if (HttpStream.KeepAlive)
+                Headers[HttpRequestHeader.Connection] = "keep-alive";
+            if(BodyStream.Length > 0)
+                Headers[HttpRequestHeader.ContentLength] = BodyStream.Length.ToString();
+
+            Headers[HttpRequestHeader.Host] = HttpStream.Url.GetHost();
+
+            int port = HttpStream.Url.GetPort();
+            if (port != 80 && port != 443)
+                Headers[HttpRequestHeader.Host] += $":{port}";
+        }
+
         /// <summary>
         /// Build http request headers and body
         /// </summary>
         /// <returns>Built packet</returns>
         public byte[] Build()
         {
-            if (HttpStream.Cookies?.GetCookies(new Uri(HttpStream.Url)).Count > 0)
-                Headers[HttpRequestHeader.Cookie] = HttpStream.Cookies.GetCookieHeader(new Uri(HttpStream.Url));
-            if (HttpStream.KeepAlive)
-                Headers[HttpRequestHeader.Connection] = "kee-alive";
-
-            Headers[HttpRequestHeader.ContentLength] = BodyStream.Length.ToString();
-            Headers[HttpRequestHeader.Host] = HttpStream.Url.GetHost();
+            PrepareHeaders();
 
             byte[] start = Encoding.UTF8.GetBytes($"{Method} {HttpStream.Url} HTTP/1.1\r\n");
             byte[] headers = Headers.ToByteArray();
@@ -69,7 +79,7 @@ namespace HttpLib
         /// </summary>
         /// <param name="dispose">Dispose request body stream after request</param>
         /// <returns>Http response</returns>
-        public async Task<HttpResponse> SendAsync(bool dispose=true)
+        public async Task<HttpResponse> SendAsync(bool dispose = true)
         {
             await HttpStream.BaseStream.WriteAsync(Build());
             HttpResponse response = new(HttpStream);
@@ -85,7 +95,7 @@ namespace HttpLib
         /// </summary>
         /// <param name="dispose">Dispose request body stream after request</param>
         /// <returns>Http response</returns>
-        public HttpResponse Send(bool dispose=true) => SendAsync(dispose).GetAwaiter().GetResult();
+        public HttpResponse Send(bool dispose = true) => SendAsync(dispose).GetAwaiter().GetResult();
 
         /// <summary>
         /// Dispose body stream

@@ -21,8 +21,9 @@ namespace HttpLib.Test
 
         static void Main(string[] args)
         {
-            string url = "https://speed.hetzner.de/100MB.bin";
+            string url = "https://www.google.com";
             HttpStream stream = new();
+            stream.Proxy = new("127.0.0.1", 8888);
             stream.OpenStream(url);
 
             HttpRequest req = new(stream);

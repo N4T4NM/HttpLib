@@ -45,6 +45,11 @@ namespace HttpLib
         /// </summary>
         public bool IsOpen { get; private set; }
 
+        /// <summary>
+        /// Connect to a proxy server when OpenStream is called
+        /// </summary>
+        public ProxyInstance Proxy { get; set; }
+
         public HttpStream()
         {
             KeepAlive = true;
@@ -64,12 +69,22 @@ namespace HttpLib
                 url.GetUrlData(out string host, out int port, out bool ssl);
 
                 Socket = new(SocketType.Stream, ProtocolType.Tcp);
-                await Socket.ConnectAsync(host, port);
 
-                BaseStream = Socket.CreateStream(host, ssl);
+                if (Proxy != null)
+                {
+                    await Socket.ConnectAsync(Proxy.Host, Proxy.Port);
+                    BaseStream = new NetworkStream(Socket);
+                    await Proxy.OpenAsync(this, host, port);
+                }
+                else
+                {
+                    await Socket.ConnectAsync(host, port);
+                    BaseStream = new NetworkStream(Socket);
+                }
 
                 Url = url;
                 Ssl = ssl;
+                if (Ssl) BaseStream = BaseStream.CreateSslStream(host);
             }
             catch (Exception ex)
             {

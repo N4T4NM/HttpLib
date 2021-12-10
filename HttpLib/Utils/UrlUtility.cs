@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Net.Security;
-using System.Net.Sockets;
 
 namespace HttpLib.Utils
 {
@@ -8,7 +7,7 @@ namespace HttpLib.Utils
     {
         public static string GetHost(this string url)
         {
-            int begin = url.IndexOf('/') + 2;
+            int begin = url.StartsWith("http") ? url.IndexOf('/') + 2 : 0;
             int end = url.Substring(begin).Contains(':') ? url.IndexOf(':', begin) : url.IndexOf('/', begin);
 
             if (end == -1)
@@ -35,17 +34,12 @@ namespace HttpLib.Utils
             port = url.GetPort();
             ssl = url.IsSsl();
         }
-        public static Stream CreateStream(this Socket socket, string host, bool ssl)
+        public static SslStream CreateSslStream(this Stream stream, string host)
         {
-            Stream stream = new NetworkStream(socket);
-            if (ssl)
-            {
-                SslStream sslStream = new SslStream(stream);
-                sslStream.AuthenticateAsClient(host);
+            SslStream sslStream = new SslStream(stream);
+            sslStream.AuthenticateAsClient(host);
 
-                stream = sslStream;
-            }
-            return stream;
+            return sslStream;
         }
     }
 }
