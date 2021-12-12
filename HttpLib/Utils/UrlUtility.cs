@@ -7,7 +7,7 @@ namespace HttpLib.Utils
     {
         public static string GetHost(this string url)
         {
-            int begin = url.StartsWith("http") ? url.IndexOf('/') + 2 : 0;
+            int begin = url.Contains("://") ? url.IndexOf('/') + 2 : 0;
             int end = url.Substring(begin).Contains(':') ? url.IndexOf(':', begin) : url.IndexOf('/', begin);
 
             if (end == -1)
