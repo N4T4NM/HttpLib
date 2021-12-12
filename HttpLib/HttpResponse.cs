@@ -1,4 +1,5 @@
-﻿using HttpLib.Utils;
+﻿using HttpLib.Readers;
+using HttpLib.Utils;
 using System;
 using System.IO;
 using System.Net;
@@ -91,7 +92,7 @@ namespace HttpLib
         {
             byte[] responseBuffer = new byte[0];
             if (Headers[HttpResponseHeader.TransferEncoding]?.ToLower() == "chunked")
-                responseBuffer = await this.ReadChunkedStreamAsync();
+                responseBuffer = await new HttpChunkReader(this).ReadAllChunksAsync();
             else if (Headers[HttpResponseHeader.ContentLength] != null)
             {
                 byte[] buffer = new byte[long.Parse(Headers[HttpResponseHeader.ContentLength])];
