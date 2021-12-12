@@ -1,4 +1,5 @@
-﻿using HttpLib.Utils;
+﻿using HttpLib.Proxy;
+using HttpLib.Utils;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -48,7 +49,7 @@ namespace HttpLib
         /// <summary>
         /// Connect to a proxy server when OpenStream is called
         /// </summary>
-        public ProxyInstance Proxy { get; set; }
+        public ProxyInfo Proxy { get; set; }
 
         public HttpStream()
         {
