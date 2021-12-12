@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net.Security;
 
 namespace HttpLib.Utils
@@ -8,7 +9,11 @@ namespace HttpLib.Utils
         public static string GetHost(this string url)
         {
             int begin = url.Contains("://") ? url.IndexOf('/') + 2 : 0;
-            int end = url.Substring(begin).Contains(':') ? url.IndexOf(':', begin) : url.IndexOf('/', begin);
+            int end;
+
+            if (url.Substring(begin).Contains(':'))
+                end = url[url.IndexOf(':', begin) + 1] == '/' ? url.IndexOf('/', begin) : url.IndexOf(':', begin);
+            else end = url.IndexOf('/', begin);
 
             if (end == -1)
                 end = url.Length;
@@ -18,7 +23,7 @@ namespace HttpLib.Utils
         public static int GetPort(this string url)
         {
             int begin = url.IndexOf('/') + 2;
-            if (!url.Substring(begin).Contains(':'))
+            if (url[url.IndexOf(':', begin) + 1] == '/' || !url.Substring(begin).Contains(':'))
                 return url.StartsWith("https://") ? 443 : 80;
 
             int portBegin = url.IndexOf(':', begin) + 1;

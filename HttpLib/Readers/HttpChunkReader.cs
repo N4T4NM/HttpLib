@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,16 +20,20 @@ namespace HttpLib.Readers
             MemoryStream stream = new();
 
             byte[] sizeBuffer = await BaseResponse.ReadToEndOfLine();
-            string sizeString = Encoding.UTF8.GetString(sizeBuffer);
-            int size = int.Parse(sizeString, NumberStyles.HexNumber);
+            string[] line = Encoding.UTF8.GetString(sizeBuffer).TrimEnd().Split(';');
+
+            string[] extensions = new string[line.Length - 1];
+            Array.Copy(line, 1, extensions, 0, extensions.Length);
+
+            int size = int.Parse(line[0], NumberStyles.HexNumber);
 
             if (size == 0)
             {
-                byte[] end = new byte[2];
-                await BaseResponse.HttpStream.BaseStream.ReadAsync(end);
-                await stream.WriteAsync(end);
+                int eol = 0;
+                while (eol != 2)
+                    eol += await BaseResponse.HttpStream.BaseStream.ReadAsync(new byte[2]);
 
-                return new(stream, true);
+                return new(stream, extensions, true);
             }
 
             byte[] sBuffer = new byte[1];
@@ -39,8 +44,14 @@ namespace HttpLib.Readers
                 total += read;
 
                 await stream.WriteAsync(sBuffer);
-                if (total == size + 2)
-                    return new(stream, false);
+                if (total == size)
+                {
+                    int eol = 0;
+                    while (eol != 2)
+                        eol += await BaseResponse.HttpStream.BaseStream.ReadAsync(new byte[2]); //Jump end of line bytes
+
+                    return new(stream, extensions, false);
+                }
             }
         }
         public HttpChunk ReadChunk() => ReadChunkAsync().GetAwaiter().GetResult();
@@ -67,14 +78,16 @@ namespace HttpLib.Readers
 
     public class HttpChunk
     {
-        public HttpChunk(MemoryStream src, bool end)
+        public HttpChunk(MemoryStream src, string[] extensions, bool end)
         {
             Buffer = src.ToArray();
+            Extensions = extensions;
             End = end;
 
             src.Dispose();
         }
 
+        public string[] Extensions { get; private set; }
         public byte[] Buffer { get; private set; }
         public bool End { get; private set; }
     }

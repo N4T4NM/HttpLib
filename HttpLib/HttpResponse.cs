@@ -96,7 +96,8 @@ namespace HttpLib
             else if (Headers[HttpResponseHeader.ContentLength] != null)
             {
                 byte[] buffer = new byte[long.Parse(Headers[HttpResponseHeader.ContentLength])];
-                await HttpStream.BaseStream.ReadAsync(buffer);
+                if(buffer.Length > 0)
+                    await HttpStream.BaseStream.ReadAsync(buffer);
 
                 responseBuffer = buffer;
             }
