@@ -1,38 +1,68 @@
 ﻿using System;
+using System.IO;
 using System.Net;
-using System.Text;
 
 namespace HttpLib.Test
 {
     internal class Program
     {
-        static void SetHeaders(WebHeaderCollection headers)
+        static void GetDownloadName(string cDisposition, out string name)
         {
-            headers["Upgrade-Insecure-Requests"] = "1";
-            headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36";
-            headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
-            headers["Sec-GPC"] = "1";
-            headers["Sec-Fetch-Site"] = "same-origin";
-            headers["Sec-Fetch-Mode"] = "navigate";
-            headers["Sec-Fetch-User"] = "?1";
-            headers["Sec-Fetch-Dest"] = "document";
-            headers["Accept-Language"] = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7";
+            int fNameBegin = cDisposition.IndexOf('"') + 1;
+            int fNameEnd = cDisposition.IndexOf('"', fNameBegin);
+
+            string fName = cDisposition.Substring(fNameBegin, fNameEnd - fNameBegin);
+            name = fName;
+        }
+
+        static void Download(HttpResponse download)
+        {
+            GetDownloadName(download.Headers["Content-Disposition"], out string name);
+            int szStrLen = download.Headers[HttpResponseHeader.ContentLength].Length;
+            long size = long.Parse(download.Headers[HttpResponseHeader.ContentLength]);
+
+            Console.Clear();
+
+
+            Console.WriteLine($"File Name: {name}");
+            Console.WriteLine($"Size: {size}\n");
+
+            FileStream fStream = new FileInfo(name).Create();
+
+            long downloaded = 0;
+            Console.Write($"Downloaded: {new string('0', szStrLen)}/{size.ToString(new string('0', szStrLen))}");
+            Console.CursorLeft -= (szStrLen * 2) + 1;
+
+            byte[] buffer = new byte[1024];
+            while (downloaded != size)
+            {
+                Console.CursorVisible = false;
+
+                int sz = download.HttpStream.BaseStream.Read(buffer);
+                downloaded += sz;
+
+                fStream.Write(buffer, 0, sz);
+                Console.Write(downloaded.ToString(new string('0', szStrLen)));
+                Console.CursorLeft -= szStrLen;
+            }
+
+            Console.CursorTop += 2;
+            Console.CursorLeft = 0;
+
+            Console.WriteLine("FINISHED !");
         }
 
         static void Main(string[] args)
         {
-            string url = "https://www.google.com";
+            Console.WriteLine("=== Google Drive Download Test ===");
+            Console.Write("GDrive Url: ");
+            string url = Console.ReadLine();
+
             HttpStream stream = new();
-            stream.Proxy = new("127.0.0.1", 8888);
-            stream.OpenStream(url);
+            GDriveDownloadStart start = new();
 
-            HttpRequest req = new(stream);
-            SetHeaders(req.Headers);
-
-            HttpResponse res = req.Send();
-
-            Console.WriteLine(Encoding.UTF8.GetString(res.Headers.ToByteArray()));
-            Console.WriteLine(Encoding.UTF8.GetString(res.ReadFullBody()));
+            HttpResponse download = start.Start(stream, url);
+            Download(download);
         }
     }
 }
