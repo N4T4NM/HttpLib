@@ -1,13 +1,13 @@
 ﻿using System.Threading.Tasks;
 
-namespace HttpLib
+namespace HttpLib.Proxy
 {
-    public class ProxyInstance
+    public class ProxyInfo
     {
         public string Host { get; set; }
         public int Port { get; set; }
 
-        public ProxyInstance(string host, int port)
+        public ProxyInfo(string host, int port)
         {
             Host = host;
             Port = port;
